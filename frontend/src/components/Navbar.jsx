@@ -1,15 +1,19 @@
+```jsx
+
 import Link from "next/link";
 
 export default function Navbar() {
   return (
     <nav className="bg-white shadow-md">
-      <div className="max-w-7x1 mx-auto px-6 py-4 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
         {/* Logo */}
-        <h1 className="text-2x1 font-bold text-blue-600">DevConnect</h1>
+        <h1 className="text-2xl font-bold text-blue-600">
+          DevConnect
+        </h1>
 
-        {/*  Navigation Links */}
+        {/* Navigation Links */}
         <div className="flex items-center gap-6">
-          <Link href="/explore" className="hover:text-blue-600">
+          <Link href="/" className="hover:text-blue-600">
             Home
           </Link>
 
@@ -28,3 +32,4 @@ export default function Navbar() {
     </nav>
   );
 }
+```
