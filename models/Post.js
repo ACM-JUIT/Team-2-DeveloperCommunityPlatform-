@@ -1,14 +1,26 @@
+```js
 import mongoose from 'mongoose';
 
 const PostSchema = new mongoose.Schema({
   title: String,
+  description: String,
   content: String,
-  coverImage: String,
-  tags: [String],
+  author: String,
+
+  tag: String,
+
   likes: {
     type: Number,
     default: 0
   },
+
+  comments: {
+    type: Number,
+    default: 0
+  },
+
+  coverImage: String,
+
   createdAt: {
     type: Date,
     default: Date.now
@@ -16,3 +28,4 @@ const PostSchema = new mongoose.Schema({
 });
 
 export default mongoose.models.Post || mongoose.model('Post', PostSchema);
+```
