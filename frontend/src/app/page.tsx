@@ -2,6 +2,22 @@
 
 import { useState } from "react";
 
+interface PostComment {
+  id: number;
+  author: string;
+  text: string;
+}
+
+interface Post {
+  id: number;
+  author: string;
+  content: string;
+  likes: number;
+  liked: boolean;
+  comments: PostComment[];
+  createdAt: Date;
+}
+
 export default function Home() {
   const [postText, setPostText] = useState("");
 
@@ -11,6 +27,14 @@ export default function Home() {
 
   const [count, setCount] = useState(0);
 
+  const [commentInputs, setCommentInputs] = useState<Record<number, string>>(
+    {},
+  );
+
+  const [showCommentBox, setShowCommentBox] = useState<Record<number, boolean>>(
+    {},
+  );
+
   const [posts, setPosts] = useState([
     {
       id: 1,
@@ -18,7 +42,7 @@ export default function Home() {
       content: "Just shipped a new open source project",
       likes: 24,
       liked: false,
-      comments: [],
+      comments: [] as PostComment[],
       createdAt: new Date(),
     },
 
@@ -28,7 +52,7 @@ export default function Home() {
       content: "Code reviews are awesome",
       likes: 41,
       liked: false,
-      comments: [],
+      comments: [] as PostComment[],
       createdAt: new Date(),
     },
   ]);
@@ -42,7 +66,7 @@ export default function Home() {
       content: postText,
       likes: 0,
       liked: false,
-      comments: [],
+      comments: [] as PostComment[],
       createdAt: new Date(),
     };
 
@@ -71,6 +95,40 @@ export default function Home() {
     });
 
     setPosts(updatedPosts);
+  };
+
+  const handleAddComment = (postId: number) => {
+    const comment = commentInputs[postId];
+
+    if (!comment || !comment.trim()) return;
+
+    const updatedPosts = posts.map((post) => {
+      if (post.id === postId) {
+        return {
+          ...post,
+
+          comments: [
+            ...post.comments,
+
+            {
+              id: Date.now(),
+              author: currentUser,
+              text: comment,
+            },
+          ],
+        };
+      }
+
+      return post;
+    });
+
+    setPosts(updatedPosts);
+
+    setCommentInputs({
+      ...commentInputs,
+
+      [postId]: "",
+    });
   };
 
   return (
@@ -173,9 +231,49 @@ export default function Home() {
               <button onClick={() => handleLike(post.id)}>
                 {post.liked ? "💖" : "🤍"} {post.likes}
               </button>
-              <button>💬 {post.comments.length}</button>
+
+              <button
+                onClick={() =>
+                  setShowCommentBox({
+                    ...showCommentBox,
+                    [post.id]: !showCommentBox[post.id],
+                  })
+                }
+              >
+                💬 {post.comments.length}
+              </button>
+
               <button onClick={() => deletePost(post.id)}>🗑 Delete</button>
             </div>
+
+            {showCommentBox[post.id] && (
+              <>
+                <div className="comment-box">
+                  <input
+                    type="text"
+                    placeholder="Write a comment..."
+                    value={commentInputs[post.id] || ""}
+                    onChange={(e) =>
+                      setCommentInputs({
+                        ...commentInputs,
+                        [post.id]: e.target.value,
+                      })
+                    }
+                  />
+
+                  <button onClick={() => handleAddComment(post.id)}>Add</button>
+                </div>
+
+                <div className="comments-list">
+                  {post.comments.map((comment) => (
+                    <div key={comment.id} className="comment-item">
+                      <strong>{comment.author}</strong>
+                      <p>{comment.text}</p>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         ))}
       </div>
