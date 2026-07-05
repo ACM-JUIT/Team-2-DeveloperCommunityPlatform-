@@ -1,4 +1,0 @@
-{"timestamp":"00:00:01.810","source":"Server","level":"LOG","message":""}
-{"timestamp":"00:04:22.773","source":"Server","level":"ERROR","message":"Error: ENOENT: no such file or directory, scandir 'C:\\Users\\hp\\Desktop\\Pramerica_project\\devconnect\\frontend\\src\\app'"}
-{"timestamp":"00:04:22.779","source":"Server","level":"ERROR","message":"⨯ \"unhandledRejection:\" Error: ENOENT: no such file or directory, scandir 'C:\\Users\\hp\\Desktop\\Pramerica_project\\devconnect\\frontend\\src\\app'"}
-{"timestamp":"00:04:22.784","source":"Server","level":"ERROR","message":"⨯ \"unhandledRejection: \" Error: ENOENT: no such file or directory, scandir 'C:\\Users\\hp\\Desktop\\Pramerica_project\\devconnect\\frontend\\src\\app'"}
