@@ -50,3 +50,30 @@ export const createPost = async (req: Request, res: Response) => {
     });
   }
 };
+
+export const deletePost = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const post = await Post.findByIdAndDelete(id);
+
+    if (!post) {
+      return res.status(404).json({
+        success: false,
+        message: "Post not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Post deleted successfully",
+    });
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      success: false,
+      message: "Failed to delete post",
+    });
+  }
+};
