@@ -51,6 +51,40 @@ export const createPost = async (req: Request, res: Response) => {
   }
 };
 
+export const updatePost = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const post = await Post.findByIdAndUpdate(
+      id,
+      req.body,
+      {
+        new: true,
+        runValidators: true,
+      }
+    );
+
+    if (!post) {
+      return res.status(404).json({
+        success: false,
+        message: "Post not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      post,
+    });
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      success: false,
+      message: "Failed to update post",
+    });
+  }
+};
+
 export const deletePost = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
