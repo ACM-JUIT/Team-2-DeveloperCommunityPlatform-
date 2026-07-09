@@ -19,3 +19,34 @@ export const getPosts = async (req: Request, res: Response) => {
     });
   }
 };
+
+export const createPost = async (req: Request, res: Response) => {
+  try {
+    const { author, content } = req.body;
+
+    if (!author || !content) {
+      return res.status(400).json({
+        success: false,
+        message: "Author and content are required",
+      });
+    }
+
+    const post = await Post.create({
+      author,
+      content,
+      likes: 0,
+    });
+
+    res.status(201).json({
+      success: true,
+      post,
+    });
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      success: false,
+      message: "Failed to create post",
+    });
+  }
+};
