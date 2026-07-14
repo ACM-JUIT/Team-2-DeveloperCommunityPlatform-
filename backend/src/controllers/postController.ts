@@ -3,7 +3,15 @@ import Post from "../models/Post";
 
 export const getPosts = async (req: Request, res: Response) => {
   try {
-    const posts = await Post.find().sort({ createdAt: -1 });
+    const { tag } = req.query;
+
+    const filter = tag
+      ? { tags: String(tag) }
+      : {};
+
+    const posts = await Post.find(filter).sort({
+      createdAt: -1,
+    });
 
     res.status(200).json({
       success: true,
@@ -20,9 +28,48 @@ export const getPosts = async (req: Request, res: Response) => {
   }
 };
 
-export const createPost = async (req: Request, res: Response) => {
+export const getPostById = async (
+  req: Request,
+  res: Response
+) => {
   try {
-    const { author, content } = req.body;
+    const { id } = req.params;
+
+    const post = await Post.findById(id);
+
+    if (!post) {
+      return res.status(404).json({
+        success: false,
+        message: "Post not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      post,
+    });
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch post",
+    });
+  }
+};
+
+export const createPost = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const {
+      author,
+      title,
+      content,
+      coverImage,
+      tags,
+    } = req.body;
 
     if (!author || !content) {
       return res.status(400).json({
@@ -33,7 +80,10 @@ export const createPost = async (req: Request, res: Response) => {
 
     const post = await Post.create({
       author,
+      title,
       content,
+      coverImage,
+      tags: Array.isArray(tags) ? tags : [],
       likes: 0,
     });
 
@@ -51,7 +101,10 @@ export const createPost = async (req: Request, res: Response) => {
   }
 };
 
-export const updatePost = async (req: Request, res: Response) => {
+export const updatePost = async (
+  req: Request,
+  res: Response
+) => {
   try {
     const { id } = req.params;
 
@@ -85,7 +138,50 @@ export const updatePost = async (req: Request, res: Response) => {
   }
 };
 
-export const deletePost = async (req: Request, res: Response) => {
+export const likePost = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const { id } = req.params;
+
+    const post = await Post.findByIdAndUpdate(
+      id,
+      {
+        $inc: {
+          likes: 1,
+        },
+      },
+      {
+        new: true,
+      }
+    );
+
+    if (!post) {
+      return res.status(404).json({
+        success: false,
+        message: "Post not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      post,
+    });
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      success: false,
+      message: "Failed to like post",
+    });
+  }
+};
+
+export const deletePost = async (
+  req: Request,
+  res: Response
+) => {
   try {
     const { id } = req.params;
 

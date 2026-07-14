@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import postRoutes from "./routes/postRoutes";
+import commentRoutes from "./routes/commentRoutes";
 
 const app = express();
 
@@ -12,5 +13,6 @@ app.get("/", (req, res) => {
 });
 
 app.use("/api/posts", postRoutes);
+app.use("/api/comments", commentRoutes);
 
 export default app;
