@@ -1,18 +1,49 @@
-import mongoose, { Schema } from "mongoose";
+import mongoose, { Schema, Document } from "mongoose";
 
-const PostSchema = new Schema(
+export interface IPost extends Document {
+  author: string;
+  title?: string;
+  content: string;
+  coverImage?: string;
+  tags: string[];
+  likes: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const PostSchema = new Schema<IPost>(
   {
     author: {
       type: String,
       required: true,
+      trim: true,
     },
+
+    title: {
+      type: String,
+      trim: true,
+    },
+
     content: {
       type: String,
       required: true,
+      trim: true,
     },
+
+    coverImage: {
+      type: String,
+      trim: true,
+    },
+
+    tags: {
+      type: [String],
+      default: [],
+    },
+
     likes: {
       type: Number,
       default: 0,
+      min: 0,
     },
   },
   {
@@ -20,7 +51,5 @@ const PostSchema = new Schema(
   }
 );
 
-const Post =
-  mongoose.models.Post || mongoose.model("Post", PostSchema);
-
-export default Post;
+export default mongoose.models.Post ||
+  mongoose.model<IPost>("Post", PostSchema);
