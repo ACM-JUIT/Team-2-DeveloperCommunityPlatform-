@@ -1,135 +1,240 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 interface PostComment {
-  id: number;
-  author: string;
+  _id: string;
+  postId: string;
+  username: string;
   text: string;
+  createdAt?: string;
 }
 
 interface Post {
-  id: number;
+  _id: string;
   author: string;
+  title?: string;
   content: string;
+  coverImage?: string;
+  tags: string[];
   likes: number;
-  liked: boolean;
+  liked?: boolean;
   comments: PostComment[];
-  createdAt: Date;
+  createdAt?: string;
 }
+
+const API_URL = "http://localhost:5000";
 
 export default function Home() {
   const [postText, setPostText] = useState("");
-
   const [currentUser, setCurrentUser] = useState("Anonymous");
-
   const [nameInput, setNameInput] = useState("");
-
   const [count, setCount] = useState(0);
 
-  const [commentInputs, setCommentInputs] = useState<Record<number, string>>(
-    {},
+  const [commentInputs, setCommentInputs] = useState<Record<string, string>>(
+    {}
   );
 
-  const [showCommentBox, setShowCommentBox] = useState<Record<number, boolean>>(
-    {},
-  );
+  const [showCommentBox, setShowCommentBox] = useState<
+    Record<string, boolean>
+  >({});
 
-  const [posts, setPosts] = useState([
-    {
-      id: 1,
-      author: "Maya Chen",
-      content: "Just shipped a new open source project",
-      likes: 24,
-      liked: false,
-      comments: [] as PostComment[],
-      createdAt: new Date(),
-    },
+  const [posts, setPosts] = useState<Post[]>([]);
 
-    {
-      id: 2,
-      author: "Rohan Verma",
-      content: "Code reviews are awesome",
-      likes: 41,
-      liked: false,
-      comments: [] as PostComment[],
-      createdAt: new Date(),
-    },
-  ]);
+  async function fetchComments(postId: string): Promise<PostComment[]> {
+    try {
+      const res = await fetch(
+        `${API_URL}/api/comments/${postId}`
+      );
 
-  const createPost = () => {
-    if (!postText.trim()) return;
-
-    const newPost = {
-      id: Date.now(),
-      author: currentUser,
-      content: postText,
-      likes: 0,
-      liked: false,
-      comments: [] as PostComment[],
-      createdAt: new Date(),
-    };
-
-    setPosts([newPost, ...posts]);
-
-    setPostText("");
-  };
-
-  const deletePost = (id: number) => {
-    const updatedPosts = posts.filter((post) => post.id !== id);
-
-    setPosts(updatedPosts);
-  };
-
-  const handleLike = (id: number) => {
-    const updatedPosts = posts.map((post) => {
-      if (post.id === id) {
-        return {
-          ...post,
-          liked: !post.liked,
-          likes: post.liked ? post.likes - 1 : post.likes + 1,
-        };
+      if (!res.ok) {
+        return [];
       }
 
-      return post;
-    });
+      const data = await res.json();
 
-    setPosts(updatedPosts);
-  };
+      if (data.success) {
+        return data.comments;
+      }
 
-  const handleAddComment = (postId: number) => {
+      return [];
+    } catch (err) {
+      console.error(err);
+      return [];
+    }
+  }
+
+  async function fetchPosts() {
+    try {
+      const res = await fetch(`${API_URL}/api/posts`);
+
+      if (!res.ok) {
+        throw new Error("Failed to fetch posts");
+      }
+
+      const data = await res.json();
+
+      if (data.success) {
+        const loadedPosts = await Promise.all(
+          data.posts.map(async (post: Omit<Post, "comments">) => {
+            const comments = await fetchComments(post._id);
+
+            return {
+              ...post,
+              tags: post.tags || [],
+              liked: false,
+              comments,
+            };
+          })
+        );
+
+        setPosts(loadedPosts);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  useEffect(() => {
+    fetchPosts();
+  }, []);
+
+  async function createPost() {
+    if (!postText.trim()) return;
+
+    try {
+      const res = await fetch(`${API_URL}/api/posts`, {
+        method: "POST",
+
+        headers: {
+          "Content-Type": "application/json",
+        },
+
+        body: JSON.stringify({
+          author: currentUser,
+          content: postText,
+        }),
+      });
+
+      if (!res.ok) {
+        alert("Failed to create post");
+        return;
+      }
+
+      setPostText("");
+
+      await fetchPosts();
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  async function deletePost(id: string) {
+    try {
+      const res = await fetch(
+        `${API_URL}/api/posts/${id}`,
+        {
+          method: "DELETE",
+        }
+      );
+
+      if (!res.ok) {
+        alert("Failed to delete post");
+        return;
+      }
+
+      await fetchPosts();
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  async function handleLike(id: string) {
+    try {
+      const res = await fetch(
+        `${API_URL}/api/posts/${id}/like`,
+        {
+          method: "PATCH",
+        }
+      );
+
+      if (!res.ok) {
+        alert("Failed to like post");
+        return;
+      }
+
+      const data = await res.json();
+
+      if (data.success) {
+        setPosts((currentPosts) =>
+          currentPosts.map((post) => {
+            if (post._id === id) {
+              return {
+                ...post,
+                likes: data.post.likes,
+                liked: true,
+              };
+            }
+
+            return post;
+          })
+        );
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  async function handleAddComment(postId: string) {
     const comment = commentInputs[postId];
 
     if (!comment || !comment.trim()) return;
 
-    const updatedPosts = posts.map((post) => {
-      if (post.id === postId) {
-        return {
-          ...post,
+    try {
+      const res = await fetch(`${API_URL}/api/comments`, {
+        method: "POST",
 
-          comments: [
-            ...post.comments,
+        headers: {
+          "Content-Type": "application/json",
+        },
 
-            {
-              id: Date.now(),
-              author: currentUser,
-              text: comment,
-            },
-          ],
-        };
+        body: JSON.stringify({
+          postId,
+          username: currentUser,
+          text: comment,
+        }),
+      });
+
+      if (!res.ok) {
+        alert("Failed to add comment");
+        return;
       }
 
-      return post;
-    });
+      const data = await res.json();
 
-    setPosts(updatedPosts);
+      if (data.success) {
+        setPosts((currentPosts) =>
+          currentPosts.map((post) => {
+            if (post._id === postId) {
+              return {
+                ...post,
+                comments: [...post.comments, data.comment],
+              };
+            }
 
-    setCommentInputs({
-      ...commentInputs,
+            return post;
+          })
+        );
 
-      [postId]: "",
-    });
-  };
+        setCommentInputs((currentInputs) => ({
+          ...currentInputs,
+          [postId]: "",
+        }));
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }
 
   return (
     <main className="container">
@@ -139,9 +244,10 @@ export default function Home() {
 
       <h2 className="title">Developer Community</h2>
 
-      <p className="subtitle">Welcome to our Developer Community App</p>
+      <p className="subtitle">
+        Welcome to our Developer Community App
+      </p>
 
-      {/* Counter Card */}
       <div className="section-title">Counter Card</div>
 
       <div className="stats">
@@ -164,15 +270,22 @@ export default function Home() {
       </div>
 
       <div className="btn-group">
-        <button onClick={() => setCount(count + 1)}>+ increment</button>
+        <button onClick={() => setCount(count + 1)}>
+          + increment
+        </button>
 
-        <button onClick={() => setCount(count - 1)}>- decrement</button>
+        <button onClick={() => setCount(count - 1)}>
+          - decrement
+        </button>
 
-        <button onClick={() => setCount(0)}>reset</button>
+        <button onClick={() => setCount(0)}>
+          reset
+        </button>
       </div>
 
-      {/* Name Input */}
-      <div className="section-title">Name Input Card</div>
+      <div className="section-title">
+        Name Input Card
+      </div>
 
       <div className="input-row">
         <input
@@ -180,13 +293,13 @@ export default function Home() {
           onChange={(e) => setNameInput(e.target.value)}
           placeholder="enter your name..."
         />
+
         <button
           className="green-btn"
           onClick={() => {
             if (!nameInput.trim()) return;
 
             setCurrentUser(nameInput);
-
             setNameInput("");
           }}
         >
@@ -194,80 +307,121 @@ export default function Home() {
         </button>
       </div>
 
-      <p className="anonymous">&gt; posting as {currentUser}</p>
+      <p className="anonymous">
+        &gt; posting as {currentUser}
+      </p>
 
-      {/* Post Section */}
-      <div className="section-title">Post Section</div>
+      <div className="section-title">
+        Post Section
+      </div>
 
       <textarea
         value={postText}
         onChange={(e) => setPostText(e.target.value)}
-        placeholder="what's on your mind? (ctrl+enter to post)"
+        placeholder="what's on your mind?"
       />
 
       <div className="post-footer">
         <span>{postText.length} chars</span>
 
-        <button className="green-btn" onClick={createPost}>
+        <button
+          className="green-btn"
+          onClick={createPost}
+        >
           ✈ post
         </button>
       </div>
 
       <div className="posts-list">
         {posts.map((post) => (
-          <div key={post.id} className="post-card">
+          <div key={post._id} className="post-card">
             <div className="post-header">
-              <div className="avatar">{post.author.charAt(0)}</div>
+              <div className="avatar">
+                {post.author.charAt(0).toUpperCase()}
+              </div>
 
               <div>
                 <h3>{post.author}</h3>
-                <span>Just now</span>
+
+                <span>
+                  {post.createdAt
+                    ? new Date(post.createdAt).toLocaleString()
+                    : "Just now"}
+                </span>
               </div>
             </div>
 
-            <p className="post-content">{post.content}</p>
+            {post.title && (
+              <h3>{post.title}</h3>
+            )}
+
+            <p className="post-content">
+              {post.content}
+            </p>
+
+            {post.tags.length > 0 && (
+              <div>
+                {post.tags.map((tag) => (
+                  <span key={tag}>
+                    #{tag}{" "}
+                  </span>
+                ))}
+              </div>
+            )}
 
             <div className="post-actions">
-              <button onClick={() => handleLike(post.id)}>
+              <button onClick={() => handleLike(post._id)}>
                 {post.liked ? "💖" : "🤍"} {post.likes}
               </button>
 
               <button
                 onClick={() =>
-                  setShowCommentBox({
-                    ...showCommentBox,
-                    [post.id]: !showCommentBox[post.id],
-                  })
+                  setShowCommentBox((currentBoxes) => ({
+                    ...currentBoxes,
+                    [post._id]: !currentBoxes[post._id],
+                  }))
                 }
               >
                 💬 {post.comments.length}
               </button>
 
-              <button onClick={() => deletePost(post.id)}>🗑 Delete</button>
+              <button onClick={() => deletePost(post._id)}>
+                🗑 Delete
+              </button>
             </div>
 
-            {showCommentBox[post.id] && (
+            {showCommentBox[post._id] && (
               <>
                 <div className="comment-box">
                   <input
                     type="text"
                     placeholder="Write a comment..."
-                    value={commentInputs[post.id] || ""}
+                    value={commentInputs[post._id] || ""}
                     onChange={(e) =>
-                      setCommentInputs({
-                        ...commentInputs,
-                        [post.id]: e.target.value,
-                      })
+                      setCommentInputs((currentInputs) => ({
+                        ...currentInputs,
+                        [post._id]: e.target.value,
+                      }))
                     }
                   />
 
-                  <button onClick={() => handleAddComment(post.id)}>Add</button>
+                  <button
+                    onClick={() =>
+                      handleAddComment(post._id)
+                    }
+                  >
+                    Add
+                  </button>
                 </div>
 
                 <div className="comments-list">
                   {post.comments.map((comment) => (
-                    <div key={comment.id} className="comment-item">
-                      <strong>{comment.author}</strong>
+                    <div
+                      key={comment._id}
+                      className="comment-item"
+                    >
+                      <strong>{comment.username}</strong>
+
                       <p>{comment.text}</p>
                     </div>
                   ))}
